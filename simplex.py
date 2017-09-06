@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import codecs
 
 variables_desicion = 0
