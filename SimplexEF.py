@@ -1,5 +1,6 @@
 import codecs
 import numpy as np
+import pandas as pd
 np.set_printoptions(suppress=True)
 import pandas as pd
 INF = 1000000000000
@@ -11,8 +12,20 @@ coeficientes_restricciones = []
 signos_restricciones = []
 pcolumns = []
 pindex = []
-a = np.array([])
+mat = np.array([])
 metodo_m=False
+
+estado = 0
+file = open('Log.txt', 'w')
+mat = []
+varBasicas = []
+pivotJ =0
+pivotI=0
+pivot=0
+esMatFinal = False
+rowSize = 0
+matSize = 0
+
 
 def leer_archivo():
     #se referencian las variables globales para poder modificar su contenido
@@ -53,16 +66,48 @@ def leer_archivo():
             else:
                 coeficientes_restricciones[i].append(float(elementos))
 
-def Simplex(mat, vb):
+def writeMatrix():
+	global estado
+	global pivotJ
+	global pivotI
+	global pivot
+	global esMatFinal
+	global rowSize
+	global matSize
 
-	df = pd.DataFrame(a, index=pindex, columns=pcolumns)
-	print(df)
 
-	pivotJ = 0
-	pivotI = 0
 	rowSize = len(mat[0])
 	matSize = len(mat)
+	pcolumns = []
+	for i in range(0, rowSize - 1):
+		pcolumns += ["x" + str(i + 1)]
+	pcolumns += ["LD"]
+	df = pd.DataFrame(mat, index=varBasicas, columns=pcolumns)
+	if (esMatFinal):
+		file.write("Estado Final\n\n")
+		file.write(str(df))
+		file.write("\n\n")
+		file.write("Respuesta Final: U= " + str(mat[0][rowSize - 1]))
+		return 0
+	file.write("Estado " + str(estado) + "\n\n")
+	file.write(str(df))
+	file.write("\n\n")
+	file.write("VB entrante: x" + str(pivotJ + 1) +", VB saliente: " + varBasicas[pivotI]+ ", Número Pivot: " + str(pivot) + "\n\n")
+	return 0
+	
+	
 
+
+#Realiza el metodo Simplex, mat es la matriz inicial, vd es un arreglo con las variables basicas [x3,x4,x5]
+def Simplex():
+	global estado
+	global pivotJ
+	global pivotI
+	global pivot
+	global esMatFinal
+	global rowSize
+	global matSize
+	global varBasicas
 	#Encontrar columna pivote
 	nmin = 0
 	firstRow = mat[0]
@@ -73,6 +118,8 @@ def Simplex(mat, vb):
 
 	#Si ya no hay negativos
 	if nmin >= 0:
+		esMatFinal = True
+		writeMatrix()
 		return 0
 
 	#Encontrar fila pivote
@@ -85,18 +132,26 @@ def Simplex(mat, vb):
 					nmin = aux
 					pivotI = i
 
+	#Define pivot
+	pivot = mat[pivotI][pivotJ]
+
+
+	#Escribe en e archivo
+	writeMatrix()
+
+	
 	#Cambia el tag de la tabla
-	vb[pivotI] = "x" + str(pivotJ + 1)
+	varBasicas[pivotI] = "x" + str(pivotJ + 1)
 
 	#Divide Fila por pivote
-	pivot = mat[pivotI][pivotJ]
 	mat[pivotI] = mat[pivotI]/float(pivot)
 
 	#Hace la columna pivote en 0s
 	for i in range(0, matSize):
 		if i != pivotI:
 			mat[i] = mat[i] - (mat[pivotI] * mat[i][pivotJ])
-	Simplex(mat,vb)
+	estado += 1
+	Simplex()
 
 def crear_variables(maximizar):
         global pindex
@@ -156,7 +211,7 @@ def crear_variables(maximizar):
         pindex = pin
 
 def preparar_tabla():
-    global a
+    global mat
     global variables_desicion
     global numero_restricciones
     global coeficientes_funcion_objetivo
@@ -171,11 +226,16 @@ def preparar_tabla():
     for i in range(0,numero_restricciones):
         primera_tabla.append(coeficientes_restricciones[i])
     b = np.array(primera_tabla)
-    a = b
+    mat = b
     
 
 def main():
     global pcolumns
+    global rowSize
+    global matSize
+    global mat
+    global varBasicas
+
     leer_archivo()
     crear_variables(True)
     preparar_tabla()
@@ -183,7 +243,11 @@ def main():
         variable = "x"+str(i)
         pcolumns.append(variable)
     pcolumns.append("LD")
-    print("pindex: ", pindex)
-    print("a: ", a)
-    print("pcolumns: ", pcolumns)
-    #Simplex(a,pindex)
+    varBasicas = pindex
+    rowSize = len(mat[0])
+    matSize = len(mat)
+    Simplex()
+
+if __name__ == "__main__":
+    # execute only if run as a script
+    main()
