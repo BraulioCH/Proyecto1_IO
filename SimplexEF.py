@@ -84,6 +84,10 @@ def writeMatrix():
 	pcolumns += ["LD"]
 	df = pd.DataFrame(mat, index=varBasicas, columns=pcolumns)
 	if (esMatFinal):
+		print("Estado Final\n\n")
+		print(str(df))
+		print("\n\n")
+		print("Respuesta Final: U= " + str(mat[0][rowSize - 1]))
 		file.write("Estado Final\n\n")
 		file.write(str(df))
 		file.write("\n\n")
