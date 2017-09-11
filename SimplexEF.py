@@ -74,24 +74,31 @@ def writeMatrix():
 	global esMatFinal
 	global rowSize
 	global matSize
+	global mat
 
-
-	rowSize = len(mat[0])
-	matSize = len(mat)
 	pcolumns = []
 	for i in range(0, rowSize - 1):
 		pcolumns += ["x" + str(i + 1)]
 	pcolumns += ["LD"]
 	df = pd.DataFrame(mat, index=varBasicas, columns=pcolumns)
 	if (esMatFinal):
+		result = []
+		for x in range(1,rowSize):
+			var = "x"+str(x)
+			num = 0
+			for y in range(1,matSize):
+				if(var == varBasicas[y]):
+					num = mat[y][rowSize - 1]
+			result = result + [num]
+
 		print("Estado Final\n\n")
 		print(str(df))
 		print("\n\n")
-		print("Respuesta Final: U= " + str(mat[0][rowSize - 1]))
+		print("Respuesta Final: U= " + str(mat[0][rowSize - 1]) + " " + str(result))
 		file.write("Estado Final\n\n")
 		file.write(str(df))
 		file.write("\n\n")
-		file.write("Respuesta Final: U= " + str(mat[0][rowSize - 1]))
+		file.write("Respuesta Final: U= " + str(mat[0][rowSize - 1]) + " " + str(result))
 		return 0
 	file.write("Estado " + str(estado) + "\n\n")
 	file.write(str(df))
