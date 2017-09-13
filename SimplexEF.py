@@ -14,6 +14,24 @@ pcolumns = []
 pindex = []
 mat = np.array([])
 metodo_m=False
+ayuda = "El programada puede ser ejecutado de las siguientes maneras:\n"\
++"   python simplex.py -min entrada.txt -o salida.txt (para un problema de minimización)\n"\
++"   python simplex.py -max entrada.txt -o salida.txt (para un problema de maximización)\n"\
++"Donde entrada.txt y salida.txt representan ejemplos de los archivos de entrada y salida respectivamente.\n\n"\
++"Archivo de entrada:\n"\
++"Los datos del arhcivo de entrada deben segir la siguiente estructura:\n\n"\
++"Número de variables de decisión, Número de restricciones\n"\
++"Coeficientes de la función objetivo\n"\
++"Coeficientes de las restricciones y signo de restricción\n\n"\
++"Ejemplo:\n"\
++"   2,3\n"\
++"   3,5\n"\
++"   2,1,6,≤\n"\
++"   -1,3,9,=\n"\
++"   0,1,4,≥\n\n"\
++"Archivo de salida:\n"\
++"El archivo de salida se creará en la mimsa carpeta del programa una vez este sea ejecuado,"\
++" a menos que se indique una dirección específica al ingresar el nombre del archivo."
 
 estado = 0
 file = open('Log.txt', 'w')
@@ -34,7 +52,7 @@ def leer_archivo():
     global coeficientes_funcion_objetivo
     global coeficientes_restricciones
     #abre el archivo con caracteres unicode
-    archivo = codecs.open('problema1.txt',encoding='utf-8')
+    archivo = codecs.open('ejemplo.txt',encoding='utf-8')
     #lee el archivo por lineas y guarda las lineas en 'contenido'
     contenido = archivo.read().splitlines()
     
@@ -248,7 +266,7 @@ def main():
     global varBasicas
 
     leer_archivo()
-    crear_variables(True)
+    crear_variables(False)
     preparar_tabla()
     for i in range(1,len(coeficientes_funcion_objetivo)-1):
         variable = "x"+str(i)
