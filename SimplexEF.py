@@ -1,9 +1,10 @@
 import codecs
-import numpy as np
+#import numpy as np
 import pandas as pd
-np.set_printoptions(suppress=True)
 import pandas as pd
+from fractions import Fraction
 INF = 1000000000000
+# M = 1.000.000.000.000
 M = 1000000
 variables_desicion = 0
 numero_restricciones = 0
@@ -12,7 +13,7 @@ coeficientes_restricciones = []
 signos_restricciones = []
 pcolumns = []
 pindex = []
-mat = np.array([])
+mat = []
 metodo_m=False
 ayuda = "El programada puede ser ejecutado de las siguientes maneras:\n"\
 +"   python simplex.py -min entrada.txt -o salida.txt (para un problema de minimización)\n"\
@@ -35,7 +36,6 @@ ayuda = "El programada puede ser ejecutado de las siguientes maneras:\n"\
 
 estado = 0
 file = open('Log.txt', 'w')
-mat = []
 varBasicas = []
 pivotJ =0
 pivotI=0
@@ -43,6 +43,11 @@ pivot=0
 esMatFinal = False
 rowSize = 0
 matSize = 0
+
+multiplicadores = []
+sumadores = []
+valores_reales = []
+indiceFila = 0
 
 
 def leer_archivo():
@@ -137,6 +142,10 @@ def Simplex():
 	global rowSize
 	global matSize
 	global varBasicas
+	global multiplicadores
+	global sumadores
+	global valores_reales
+	global indiceFila
 	#Encontrar columna pivote
 	nmin = 0
 	firstRow = mat[0]
@@ -148,7 +157,27 @@ def Simplex():
 	#Si ya no hay negativos
 	if nmin >= 0:
 		esMatFinal = True
+		valores_reales = list(mat[0])
+		for i in range(0,len(mat[0])):
+			if(multiplicadores[i] != 0):
+				aux = (mat[0][i]-sumadores[i])/multiplicadores[i]
+				if((aux==M) or (M-aux<1 and M-aux>0) or (M-aux<0 and M-aux>-1)):
+					if(multiplicadores[i]!=1):
+						if(sumadores[i]<0):
+							mat[0][i] = str(round(multiplicadores[i],2))+"M"+str(round(sumadores[i],2))
+						elif(sumadores[i]>0):
+							mat[0][i] = str(round(multiplicadores[i],2))+"M+"+str(round(sumadores[i],2))
+						else:
+							mat[0][i] = str(round(multiplicadores[i],2))+"M"
+					else:
+						if(sumadores[i]<0):
+							mat[0][i] = "M"+str(round(sumadores[i],2))
+						elif(sumadores[i]>0):
+							mat[0][i] = "M+"+str(round(sumadores[i],2))
+						else:
+							mat[0][i] = "M"
 		writeMatrix()
+		mat[0] = list(valores_reales)
 		return 0
 
 	#Encontrar fila pivote
@@ -164,23 +193,81 @@ def Simplex():
 	#Define pivot
 	pivot = mat[pivotI][pivotJ]
 
-
+	valores_reales = list(mat[0])
+	for i in range(0,len(mat[0])):
+		if(multiplicadores[i] != 0):
+			aux = (mat[0][i]-sumadores[i])/multiplicadores[i]
+			if((aux==M) or (M-aux<1 and M-aux>0) or (M-aux<0 and M-aux>-1)):
+				if(multiplicadores[i]!=1):
+					if(sumadores[i]<0):
+						mat[0][i] = str(round(multiplicadores[i],2))+"M"+str(round(sumadores[i],2))
+					elif(sumadores[i]>0):
+						mat[0][i] = str(round(multiplicadores[i],2))+"M+"+str(round(sumadores[i],2))
+					else:
+						mat[0][i] = str(round(multiplicadores[i],2))+"M"
+				else:
+					if(sumadores[i]<0):
+						mat[0][i] = "M"+str(round(sumadores[i],2))
+					elif(sumadores[i]>0):
+						mat[0][i] = "M+"+str(round(sumadores[i],2))
+					else:
+						mat[0][i] = "M"
 	#Escribe en e archivo
 	writeMatrix()
+	mat[0] = list(valores_reales)
 
-	
 	#Cambia el tag de la tabla
 	varBasicas[pivotI] = "x" + str(pivotJ + 1)
 
 	#Divide Fila por pivote
-	mat[pivotI] = mat[pivotI]/float(pivot)
+	mat[pivotI] = dividirFila(mat[pivotI],float(pivot))
+
+	mult = -multiplicadores[pivotJ]
+	suma = -sumadores[pivotJ]
+	for i in range(0, len(mat[0])):
+		print("\n viejo multiplicador "+str(i)+" = "+str(multiplicadores[i]))
+
+		print(" viejo sumador "+str(i)+" = "+str(sumadores[i]))
+
+		nuevoMult = mult*mat[pivotI][i]
+
+		print("nuevoMult "+str(nuevoMult)+" = "+str(mult)+"*"+str(mat[pivotI][i]))
+
+		nuevoSum = suma*mat[pivotI][i]
+
+		print("nuevoSum "+str(nuevoSum)+" = "+str(suma)+"*"+str(mat[pivotI][i]))
+
+		multiplicadores[i]+=nuevoMult
+
+		print("multiplicador "+str(multiplicadores[i])+" = viejo multiplicador + "+ str(nuevoMult))
+
+		sumadores[i]+=nuevoSum
+
+		print("sumador "+str(sumadores[i])+" = viejo sumador + "+ str(nuevoSum)+"\n")
 
 	#Hace la columna pivote en 0s
 	for i in range(0, matSize):
 		if i != pivotI:
-			mat[i] = mat[i] - (mat[pivotI] * mat[i][pivotJ])
+			aux = list(mat[pivotI])
+			mat[i] = restarFilas(mat[i],(multiplicarFila(aux,mat[i][pivotJ])))
+
 	estado += 1
 	Simplex()
+
+def dividirFila(fila,valor):
+	for i in range(0,len(fila)):
+		fila[i] = fila[i]/valor
+	return fila
+
+def multiplicarFila(fila,valor):
+	for i in range(0,len(fila)):
+		fila[i] = fila[i]*valor
+	return fila
+
+def restarFilas(fila,fila2):
+	for i in range(0,len(fila)):
+		fila[i] = fila[i]-fila2[i]
+	return fila
 
 def crear_variables(maximizar):
         global pindex
@@ -245,18 +332,31 @@ def preparar_tabla():
     global numero_restricciones
     global coeficientes_funcion_objetivo
     global coeficientes_restricciones
+    global sumadores
+    global multiplicadores
+    global valores_reales
+
+    for i in range(0,len(coeficientes_funcion_objetivo)):
+    	if(coeficientes_funcion_objetivo[i] == M):
+    		sumadores.append(float(0));
+    		multiplicadores.append(float(1));
+    	else:
+    		sumadores.append(coeficientes_funcion_objetivo[i]);
+    		multiplicadores.append(float(0));
+    	valores_reales.append(float(0));
+
     if metodo_m:
         for i in range(0,numero_restricciones):
             if(signos_restricciones[i] == '=' or signos_restricciones[i] == '≥'):
                 for j in range(0,len(coeficientes_funcion_objetivo)):
-                    coeficientes_funcion_objetivo[j] += (coeficientes_restricciones[i][j]*(-M))
+                	multiplicadores[j] -= coeficientes_restricciones[i][j]
+                	coeficientes_funcion_objetivo[j] += (coeficientes_restricciones[i][j]*(-M))
+
     primera_tabla = []
     primera_tabla.append(coeficientes_funcion_objetivo)
     for i in range(0,numero_restricciones):
         primera_tabla.append(coeficientes_restricciones[i])
-    b = np.array(primera_tabla)
-    mat = b
-    
+    mat = primera_tabla
 
 def main():
     global pcolumns
