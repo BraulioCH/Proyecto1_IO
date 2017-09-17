@@ -157,9 +157,11 @@ def Simplex():
 	#Si ya no hay negativos
 	if nmin >= 0:
 		esMatFinal = True
+	#guarda el valor real de la primera columna para reemplazarla con su expresión en M
 		valores_reales = list(mat[0])
 		for i in range(0,len(mat[0])):
 			if(multiplicadores[i] != 0):
+				#si el valor en la tabla tiene un M lo reemplaza con un string con M
 				aux = (mat[0][i]-sumadores[i])/multiplicadores[i]
 				if((aux==M) or (M-aux<1 and M-aux>0) or (M-aux<0 and M-aux>-1)):
 					if(multiplicadores[i]!=1):
@@ -192,12 +194,13 @@ def Simplex():
 
 	#Define pivot
 	pivot = mat[pivotI][pivotJ]
-
+	#guarda el valor real de la primera columna para reemplazarla con su expresión en M
 	valores_reales = list(mat[0])
 	for i in range(0,len(mat[0])):
 		if(multiplicadores[i] != 0):
 			aux = (mat[0][i]-sumadores[i])/multiplicadores[i]
 			if((aux==M) or (M-aux<1 and M-aux>0) or (M-aux<0 and M-aux>-1)):
+				#si el valor en la tabla tiene un M lo reemplaza con un string con M
 				if(multiplicadores[i]!=1):
 					if(sumadores[i]<0):
 						mat[0][i] = str(round(multiplicadores[i],2))+"M"+str(round(sumadores[i],2))
@@ -212,8 +215,9 @@ def Simplex():
 						mat[0][i] = "M+"+str(round(sumadores[i],2))
 					else:
 						mat[0][i] = "M"
-	#Escribe en e archivo
+	#Escribe en el archivo
 	writeMatrix()
+	#regresa los valores reales a la tabla para continuar con las operaciones
 	mat[0] = list(valores_reales)
 
 	#Cambia el tag de la tabla
@@ -222,28 +226,14 @@ def Simplex():
 	#Divide Fila por pivote
 	mat[pivotI] = dividirFila(mat[pivotI],float(pivot))
 
+	#actualiza los operadores que afectan a M en la nueva tabla
 	mult = -multiplicadores[pivotJ]
 	suma = -sumadores[pivotJ]
 	for i in range(0, len(mat[0])):
-		print("\n viejo multiplicador "+str(i)+" = "+str(multiplicadores[i]))
-
-		print(" viejo sumador "+str(i)+" = "+str(sumadores[i]))
-
 		nuevoMult = mult*mat[pivotI][i]
-
-		print("nuevoMult "+str(nuevoMult)+" = "+str(mult)+"*"+str(mat[pivotI][i]))
-
 		nuevoSum = suma*mat[pivotI][i]
-
-		print("nuevoSum "+str(nuevoSum)+" = "+str(suma)+"*"+str(mat[pivotI][i]))
-
 		multiplicadores[i]+=nuevoMult
-
-		print("multiplicador "+str(multiplicadores[i])+" = viejo multiplicador + "+ str(nuevoMult))
-
 		sumadores[i]+=nuevoSum
-
-		print("sumador "+str(sumadores[i])+" = viejo sumador + "+ str(nuevoSum)+"\n")
 
 	#Hace la columna pivote en 0s
 	for i in range(0, matSize):
@@ -254,21 +244,25 @@ def Simplex():
 	estado += 1
 	Simplex()
 
+#divide los valores de una fila entre un valor
 def dividirFila(fila,valor):
 	for i in range(0,len(fila)):
 		fila[i] = fila[i]/valor
 	return fila
 
+#multiplica los valores de una fila entre un valor
 def multiplicarFila(fila,valor):
 	for i in range(0,len(fila)):
 		fila[i] = fila[i]*valor
 	return fila
 
+#resta dos filas
 def restarFilas(fila,fila2):
 	for i in range(0,len(fila)):
 		fila[i] = fila[i]-fila2[i]
 	return fila
 
+#crea las variables de holgura,exeso y artificiales
 def crear_variables(maximizar):
         global pindex
         pin = ["U"]
@@ -281,7 +275,7 @@ def crear_variables(maximizar):
         if maximizar:
                 for i in range(0,len(coeficientes_funcion_objetivo)):
                         coeficientes_funcion_objetivo[i] *= -1
-        #reviza ≤
+        #reviza ≤ y agrega variables de holgura
         for i in range(0,numero_restricciones):
             if(signos_restricciones[i] == '≤'):
                 coeficientes_restricciones[i] = coeficientes_restricciones[i][:len(coeficientes_restricciones[i])-1] + [float(1)] \
@@ -294,7 +288,7 @@ def crear_variables(maximizar):
                     if(len(coeficientes_restricciones[i]) < cantidad):
                         coeficientes_restricciones[i] = coeficientes_restricciones[i][:len(coeficientes_restricciones[i])-1] + [float(0)] \
                                                         + coeficientes_restricciones[i][len(coeficientes_restricciones[i])-1:]
-        #reviza =
+        #reviza = y agrega variables artificiales
         for i in range(0,numero_restricciones):
             if(signos_restricciones[i] == '='):
                 metodo_m=True
@@ -308,7 +302,7 @@ def crear_variables(maximizar):
                     if(len(coeficientes_restricciones[i]) < cantidad):
                         coeficientes_restricciones[i] = coeficientes_restricciones[i][:len(coeficientes_restricciones[i])-1] + [float(0)] \
                                                         + coeficientes_restricciones[i][len(coeficientes_restricciones[i])-1:]
-        #reviza ≥
+        #reviza ≥ y agrega variables de exeso y artificiales
         for i in range(0,numero_restricciones):
             if(signos_restricciones[i] == '≥'):
                 metodo_m=True
@@ -326,6 +320,7 @@ def crear_variables(maximizar):
         coeficientes_funcion_objetivo.append(float(0))
         pindex = pin
 
+#crea la primera tabla para la iteración 0
 def preparar_tabla():
     global mat
     global variables_desicion
@@ -335,7 +330,7 @@ def preparar_tabla():
     global sumadores
     global multiplicadores
     global valores_reales
-
+    #guarda los primeros valores que afectan a M
     for i in range(0,len(coeficientes_funcion_objetivo)):
     	if(coeficientes_funcion_objetivo[i] == M):
     		sumadores.append(float(0));
@@ -345,13 +340,14 @@ def preparar_tabla():
     		multiplicadores.append(float(0));
     	valores_reales.append(float(0));
 
+    #resta las restricciones multiplicadas por M a la función objetivo
     if metodo_m:
         for i in range(0,numero_restricciones):
             if(signos_restricciones[i] == '=' or signos_restricciones[i] == '≥'):
                 for j in range(0,len(coeficientes_funcion_objetivo)):
                 	multiplicadores[j] -= coeficientes_restricciones[i][j]
                 	coeficientes_funcion_objetivo[j] += (coeficientes_restricciones[i][j]*(-M))
-
+    #agrega todo a una matriz
     primera_tabla = []
     primera_tabla.append(coeficientes_funcion_objetivo)
     for i in range(0,numero_restricciones):
